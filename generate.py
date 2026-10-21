@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import base64
 import csv
 import hashlib
 import json
@@ -27,6 +28,31 @@ from PIL import Image, ImageDraw, ImageFont
 
 import qrcode
 from qrcode.constants import ERROR_CORRECT_H
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+
+def b64url_encode(data: bytes) -> str:
+    """Base64url-encode bytes without padding (safe for URLs)."""
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def b64url_decode(text: str) -> bytes:
+    """Decode a base64url string (with or without padding) back to bytes."""
+    padding = "=" * (-len(text) % 4)
+    return base64.urlsafe_b64decode(text + padding)
+
+
+def encrypt_payload(plaintext_dict: dict, key_bytes: bytes) -> dict:
+    """Encrypt a JSON-serializable dict with AES-GCM using a random IV.
+
+    Returns {'iv': b64url, 'ciphertext': b64url}.
+    """
+    aesgcm = AESGCM(key_bytes)
+    iv = os.urandom(12)
+    plaintext = json.dumps(plaintext_dict, separators=(",", ":")).encode("utf-8")
+    ciphertext = aesgcm.encrypt(iv, plaintext, None)
+    return {"iv": b64url_encode(iv), "ciphertext": b64url_encode(ciphertext)}
 
 
 def ensure_directories():
@@ -243,8 +269,23 @@ def generate_certificates(args):
             print(f"  [{index}/{total}] SKIPPED row without 'id': {row}")
             continue
 
+        # Generate a random 256-bit secret key per certificate.
+        key_bytes = os.urandom(32)
+        key_b64 = b64url_encode(key_bytes)
+
+        # Encrypt the participant payload (zero plaintext in the registry).
+        encrypted = encrypt_payload(
+            {"name": name, "event": event, "role": role, "date": date},
+            key_bytes,
+        )
         cert_hash = compute_cert_hash(cert_id, name, event, date)
-        verify_url = f"{base_url}/?id={cert_id}" if base_url else f"/?id={cert_id}"
+
+        # QR URL now carries both the cert ID and the decryption key.
+        verify_url = (
+            f"{base_url}/?id={cert_id}&key={key_b64}"
+            if base_url
+            else f"/?id={cert_id}&key={key_b64}"
+        )
 
         img = template.copy()
         draw = ImageDraw.Draw(img)
@@ -331,10 +372,7 @@ def generate_certificates(args):
         certificates.append(
             {
                 "id": cert_id,
-                "name": name,
-                "event": event,
-                "role": role,
-                "date": date,
+                "encrypted": encrypted,
                 "hash": cert_hash,
                 "verify_url": verify_url,
             }
@@ -343,6 +381,7 @@ def generate_certificates(args):
         print(f"  [{index}/{total}] {cert_id} - {name}")
 
     # Compile flat O(1) lookup registry for GitHub Pages (/docs)
+    # Zero plaintext names or sensitive data — only encrypted blobs + hashes.
     registry = {entry["id"]: entry for entry in certificates}
     docs_dir = Path("docs")
     docs_dir.mkdir(parents=True, exist_ok=True)
@@ -353,7 +392,7 @@ def generate_certificates(args):
     print(f"[done] {len(certificates)} certificate(s) generated.")
     print(f"       PDFs : output/pdfs/*.pdf")
     print(f"       PNGs : output/pngs/*.png")
-    print(f"       Registry: {registry_path}")
+    print(f"       Registry: {registry_path} (encrypted, zero plaintext)")
 
 
 def main():

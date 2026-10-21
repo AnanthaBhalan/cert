@@ -120,17 +120,18 @@
       </button>
     </div>
 
-    <!-- Landing state: no ?id parameter -->
+    <!-- Landing state: no ?id+?key parameters -->
     <section id="state-landing" class="fade-in">
       <div class="glass rounded-2xl p-8 md:p-12 text-center">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 mb-6 font-bold text-xl shadow-lg shadow-indigo-200/50 dark:shadow-indigo-500/10">&#10003;</div>
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">Verify Certificate</h1>
-        <p class="text-slate-600 dark:text-slate-400 mb-8">Enter a Certificate ID to validate a credential and view its verified details.</p>
+        <p class="text-slate-600 dark:text-slate-400 mb-8">Enter a Certificate ID and decryption key to validate a credential and view its verified details.</p>
         <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-          <input id="q" type="text" placeholder="e.g. CERT-2026-0001" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-80 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+          <input id="q" type="text" placeholder="Certificate ID (e.g. CERT-2026-0001)" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-72 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+          <input id="qkey" type="text" placeholder="Decryption key" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-72 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
           <button id="btnSearch" class="btn-active bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-semibold text-base shadow-lg shadow-indigo-500/25 transition">Verify</button>
         </div>
-        <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Or open a direct link: <code class="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">/</code>?id=CERT-2026-0001</p>
+        <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Or scan the QR code on your certificate — it opens a direct link with both ID and key.</p>
       </div>
     </section>
 
@@ -199,24 +200,39 @@
           <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Verify another certificate</p>
           <div class="flex gap-2">
             <input id="q2" type="text" placeholder="Certificate ID" class="glass-input rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+            <input id="qkey2" type="text" placeholder="Decryption key" class="glass-input rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
             <button id="btnSearch2" class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold transition">Check</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Invalid / tampered state: ?id not found -->
+    <!-- Invalid / tampered state: ?id not found or decryption failed -->
     <section id="state-invalid" class="hidden fade-in">
       <div class="glass rounded-2xl p-8 md:p-12 text-center border border-rose-500/30 dark:border-rose-900/30 bg-rose-50/40 dark:bg-rose-900/10">
         <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 mb-6 font-bold text-xl shadow-lg shadow-rose-200/40 dark:shadow-rose-900/20">&#9888;</div>
-        <h2 class="text-2xl md:text-3xl font-bold mb-2">Certificate Not Found</h2>
-        <p class="text-slate-600 dark:text-slate-300 mb-1">The Certificate ID <span class="font-mono font-bold text-rose-600 dark:text-rose-400" id="invalidId"></span></p>
-        <p class="text-slate-600 dark:text-slate-300 mb-6">does not exist in the registry or the credential may have been tampered with.</p>
+        <h2 class="text-2xl md:text-3xl font-bold mb-2">Verification Failed</h2>
+        <p id="invalidMsg" class="text-slate-600 dark:text-slate-300 mb-6">The certificate could not be verified.</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
-          <input id="q-invalid" type="text" placeholder="Try another ID" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-80 focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
+          <input id="q-invalid" type="text" placeholder="Certificate ID" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-72 focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
+          <input id="qkey-invalid" type="text" placeholder="Decryption key" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-72 focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
           <button id="btnSearchInvalid" class="bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-600 text-white px-8 py-3.5 rounded-xl font-semibold text-base shadow-lg shadow-rose-500/25 transition">Retry</button>
         </div>
-        <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Make sure you copied the full ID, e.g. <code class="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-200 px-2 py-0.5 rounded text-xs">CERT-2026-0001</code>.</p>
+        <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Make sure you copied the full ID and decryption key from the QR code link.</p>
+      </div>
+    </section>
+
+    <!-- Decrypting state -->
+    <section id="state-decrypting" class="hidden fade-in">
+      <div class="glass rounded-2xl p-8 md:p-12 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 mb-6 font-bold text-xl shadow-lg shadow-indigo-200/50 dark:shadow-indigo-500/10">
+          <svg class="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl md:text-3xl font-bold mb-2">Decrypting Certificate</h2>
+        <p class="text-slate-600 dark:text-slate-300">Securely retrieving credential details...</p>
       </div>
     </section>
   </div>
@@ -228,11 +244,15 @@
     landing: document.getElementById('state-landing'),
     verified: document.getElementById('state-verified'),
     invalid: document.getElementById('state-invalid'),
+    decrypting: document.getElementById('state-decrypting'),
     q: document.getElementById('q'),
+    qkey: document.getElementById('qkey'),
     btnSearch: document.getElementById('btnSearch'),
     q2: document.getElementById('q2'),
+    qkey2: document.getElementById('qkey2'),
     btnSearch2: document.getElementById('btnSearch2'),
     qInvalid: document.getElementById('q-invalid'),
+    qkeyInvalid: document.getElementById('qkey-invalid'),
     btnSearchInvalid: document.getElementById('btnSearchInvalid'),
     copyLink: document.getElementById('copyLink'),
     copyId: document.getElementById('copyId'),
@@ -246,7 +266,7 @@
     vId: document.getElementById('v-id'),
     vHash: document.getElementById('v-hash'),
     vLink: document.getElementById('v-link'),
-    invalidId: document.getElementById('invalidId'),
+    invalidMsg: document.getElementById('invalidMsg'),
   };
 
   var registry = {};
@@ -255,6 +275,7 @@
     els.landing.classList.add('hidden');
     els.verified.classList.add('hidden');
     els.invalid.classList.add('hidden');
+    els.decrypting.classList.add('hidden');
     document.getElementById('state-' + name).classList.remove('hidden');
   }
 
@@ -270,51 +291,117 @@
     }
   }
 
-  function resolve(id) {
-    if (!id) {
-      setState('landing');
-      return;
-    }
-    var cert = registry[id.trim()];
-    if (cert) {
-      renderVerified(cert);
-    } else {
-      renderInvalid(id.trim());
+  // ---- base64url helpers ----
+  function b64urlDecode(str) {
+    var padding = '='.repeat((4 - (str.length % 4)) % 4);
+    var b64 = str.replace(/-/g, '+').replace(/_/g, '/') + padding;
+    try {
+      return atob(b64);
+    } catch (e) {
+      return null;
     }
   }
 
-  function renderVerified(c) {
-    els.vName.textContent = c.name;
-    els.vEvent.textContent = c.event;
-    els.vRole.textContent = c.role;
-    els.vDate.textContent = c.date;
-    els.vId.textContent = c.id;
-    els.vHash.textContent = c.hash;
+  function b64urlToBytes(str) {
+    var bin = b64urlDecode(str);
+    if (bin === null) return null;
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  // ---- AES-GCM decryption via Web Crypto API ----
+  async function decryptCert(encrypted, keyB64url) {
+    var keyBytes = b64urlToBytes(keyB64url);
+    if (!keyBytes) throw new Error('Invalid decryption key format');
+    var ivBytes = b64urlToBytes(encrypted.iv);
+    var ctBytes = b64urlToBytes(encrypted.ciphertext);
+    if (!ivBytes || !ctBytes) throw new Error('Invalid encrypted data format');
+    var cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']
+    );
+    var decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: ivBytes }, cryptoKey, ctBytes
+    );
+    var decoder = new TextDecoder();
+    return JSON.parse(decoder.decode(decrypted));
+  }
+
+  function renderVerified(certId, plaintext) {
+    els.vName.textContent = plaintext.name;
+    els.vEvent.textContent = plaintext.event;
+    els.vRole.textContent = plaintext.role;
+    els.vDate.textContent = plaintext.date;
+    els.vId.textContent = certId;
+    var entry = registry[certId];
+    if (entry && entry.hash) {
+      els.vHash.textContent = entry.hash;
+    }
+    var keyVal = new URLSearchParams(window.location.search).get('key') || '';
     els.vLink.value =
-      window.location.origin + window.location.pathname + '?id=' + encodeURIComponent(c.id);
+      window.location.origin + window.location.pathname +
+      '?id=' + encodeURIComponent(certId) +
+      '&key=' + encodeURIComponent(keyVal);
     setState('verified');
   }
 
-  function renderInvalid(id) {
-    els.invalidId.textContent = id;
+  function renderInvalid(msg) {
+    els.invalidMsg.textContent = msg || 'The certificate could not be verified.';
     setState('invalid');
   }
 
-  function doSearch(inputEl) {
-    var v = inputEl.value.trim();
-    if (!v) return;
-    window.location.search = 'id=' + encodeURIComponent(v);
+  function doSearch(idInput, keyInput) {
+    var idVal = idInput.value.trim();
+    var keyVal = keyInput.value.trim();
+    if (!idVal || !keyVal) {
+      renderInvalid('Please enter both Certificate ID and decryption key.');
+      return;
+    }
+    window.location.search = 'id=' + encodeURIComponent(idVal) + '&key=' + encodeURIComponent(keyVal);
+  }
+
+  async function resolve(id, key) {
+    if (!id || !key) {
+      setState('landing');
+      return;
+    }
+    setState('decrypting');
+    try {
+      var entry = registry[id.trim()];
+      if (!entry) {
+        renderInvalid('Certificate ID not found in the registry.');
+        return;
+      }
+      var plaintext = await decryptCert(entry.encrypted, key.trim());
+      var payload = id.trim() + plaintext.name + plaintext.event + plaintext.date;
+      var hashBuffer = await crypto.subtle.digest(
+        'SHA-256', new TextEncoder().encode(payload)
+      );
+      var hashHex = Array.from(new Uint8Array(hashBuffer))
+        .map(function (b) { return b.toString(16).padStart(2, '0'); })
+        .join('').substring(0, 12);
+      if (entry.hash && hashHex !== entry.hash) {
+        renderInvalid('Integrity check failed — data may have been tampered with.');
+        return;
+      }
+      renderVerified(id.trim(), plaintext);
+    } catch (err) {
+      renderInvalid('Decryption failed — invalid key or tampered data.');
+    }
   }
 
   // Wire up search controls
-  els.btnSearch.addEventListener('click', function () { doSearch(els.q); });
-  els.q.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q); });
+  els.btnSearch.addEventListener('click', function () { doSearch(els.q, els.qkey); });
+  els.q.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q, els.qkey); });
+  els.qkey.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q, els.qkey); });
 
-  els.btnSearch2.addEventListener('click', function () { doSearch(els.q2); });
-  els.q2.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q2); });
+  els.btnSearch2.addEventListener('click', function () { doSearch(els.q2, els.qkey2); });
+  els.q2.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q2, els.qkey2); });
+  els.qkey2.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q2, els.qkey2); });
 
-  els.btnSearchInvalid.addEventListener('click', function () { doSearch(els.qInvalid); });
-  els.qInvalid.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.qInvalid); });
+  els.btnSearchInvalid.addEventListener('click', function () { doSearch(els.qInvalid, els.qkeyInvalid); });
+  els.qInvalid.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.qInvalid, els.qkeyInvalid); });
+  els.qkeyInvalid.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.qInvalid, els.qkeyInvalid); });
 
   // Copy actions
   els.copyLink.addEventListener('click', function () { copyText(els.vLink.value, els.copyLink); });
@@ -337,6 +424,7 @@
   // Bootstrap
   var params = new URLSearchParams(window.location.search);
   var certId = params.get('id');
+  var certKey = params.get('key');
 
   fetch('./certificates.json')
     .then(function (res) {
@@ -345,7 +433,7 @@
     })
     .then(function (data) {
       registry = data;
-      resolve(certId);
+      resolve(certId, certKey);
     })
     .catch(function () {
       setState('landing');
