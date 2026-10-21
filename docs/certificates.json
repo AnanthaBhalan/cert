@@ -1,0 +1,47 @@
+{
+  "CERT-2026-0001": {
+    "id": "CERT-2026-0001",
+    "name": "Ada Lovelace",
+    "event": "Annual Tech Symposium 2026",
+    "role": "Software Engineer",
+    "date": "2026-10-15",
+    "hash": "119aa07f7f8b",
+    "verify_url": "https://ananthabhalan.github.io/cert/?id=CERT-2026-0001"
+  },
+  "CERT-2026-0002": {
+    "id": "CERT-2026-0002",
+    "name": "Nikola Tesla",
+    "event": "International Innovation Expo",
+    "role": "Lead Inventor",
+    "date": "2026-09-22",
+    "hash": "732868694591",
+    "verify_url": "https://ananthabhalan.github.io/cert/?id=CERT-2026-0002"
+  },
+  "CERT-2026-0003": {
+    "id": "CERT-2026-0003",
+    "name": "Grace Hopper",
+    "event": "National Cybersecurity Conference",
+    "role": "Senior Developer",
+    "date": "2026-08-10",
+    "hash": "2bc44398ea9d",
+    "verify_url": "https://ananthabhalan.github.io/cert/?id=CERT-2026-0003"
+  },
+  "CERT-2026-0004": {
+    "id": "CERT-2026-0004",
+    "name": "Alan Turing",
+    "event": "World AI Summit",
+    "role": "Machine Learning Researcher",
+    "date": "2026-07-05",
+    "hash": "8c6bd0293328",
+    "verify_url": "https://ananthabhalan.github.io/cert/?id=CERT-2026-0004"
+  },
+  "CERT-2026-0005": {
+    "id": "CERT-2026-0005",
+    "name": "Marie Curie",
+    "event": "Global Science Congress",
+    "role": "Research Scientist",
+    "date": "2026-06-18",
+    "hash": "852645d057ec",
+    "verify_url": "https://ananthabhalan.github.io/cert/?id=CERT-2026-0005"
+  }
+}

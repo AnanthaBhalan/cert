@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Static certificate verification portal — cert-engine">
+<title>Verify Certificate — cert-engine</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50: '#f0f5ff',
+            100: '#e0e7ff',
+            500: '#4f46e5',
+            600: '#4338ca',
+            700: '#363a8a',
+            900: '#1e1b4b',
+          },
+        },
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.55);
+    --glass-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.08);
+  }
+  .dark {
+    --glass-bg: rgba(15, 23, 42, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  }
+  body {
+    color: var(--ink, #0f172a);
+  }
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-input {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: inherit;
+  }
+  .dark .glass-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: inherit;
+  }
+  .glass-input::placeholder {
+    color: inherit;
+    opacity: 0.6;
+  }
+  .glass-input:focus {
+    outline: none;
+  }
+  .btn-active:active {
+    transform: scale(0.98);
+  }
+  .badge-pulse {
+    animation: badgePulse 2.5s infinite;
+  }
+  @keyframes badgePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+    50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  }
+  .fade-in {
+    animation: fadeIn 0.55s ease-out both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hash-wrap {
+    word-break: break-all;
+  }
+</style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 min-h-screen font-sans text-slate-900 dark:text-slate-100 selection:bg-indigo-500 selection:text-white">
+
+<script>
+(function () {
+  var html = document.documentElement;
+  var saved = localStorage.getItem('cert-theme');
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) {
+    html.classList.add('dark');
+  } else {
+    html.classList.remove('dark');
+  }
+})();
+</script>
+
+<main class="flex items-center justify-center min-h-screen px-4 py-6">
+  <div class="max-w-2xl w-full">
+
+    <!-- Theme toggle -->
+    <div class="flex justify-end mb-2">
+      <button id="themeToggle" class="glass px-3 py-2 rounded-xl text-sm font-medium hover:bg-white/40 dark:hover:bg-white/10 transition btn-active" aria-label="Toggle dark mode">
+        <svg id="themeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 3c4.971 0 9.043 3.578 9.043 8 0 3.51-2.141 6.53-5.172 8.043zM7.953 16.953a9 9 0 0112.736 0l-1.414 1.414a9 9 0 01-12.736 0zM12 3a1 1 0 011 1v4a1 1 0 11-2 0V4a1 1 0 011-1zm0 16a1 1 0 011 1v4a1 1 0 11-2 0v-4a1 1 0 011-1z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Landing state: no ?id parameter -->
+    <section id="state-landing" class="fade-in">
+      <div class="glass rounded-2xl p-8 md:p-12 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 mb-6 font-bold text-xl shadow-lg shadow-indigo-200/50 dark:shadow-indigo-500/10">&#10003;</div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">Verify Certificate</h1>
+        <p class="text-slate-600 dark:text-slate-400 mb-8">Enter a Certificate ID to validate a credential and view its verified details.</p>
+        <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+          <input id="q" type="text" placeholder="e.g. CERT-2026-0001" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-80 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+          <button id="btnSearch" class="btn-active bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-semibold text-base shadow-lg shadow-indigo-500/25 transition">Verify</button>
+        </div>
+        <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Or open a direct link: <code class="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">/</code>?id=CERT-2026-0001</p>
+      </div>
+    </section>
+
+    <!-- Verified state: valid ?id -->
+    <section id="state-verified" class="hidden fade-in">
+      <div class="flex items-start gap-3 mb-4">
+        <span class="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-emerald-200/30 dark:shadow-emerald-500/10 badge-pulse">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> VERIFIED
+        </span>
+      </div>
+      <div class="glass rounded-2xl p-6 md:p-10 border border-transparent hover:border-white/30 transition relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/5 to-transparent -z-10"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Recipient</p>
+            <p id="v-name" class="text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight"></p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Event</p>
+            <p id="v-event" class="text-lg font-semibold text-slate-700 dark:text-slate-200"></p>
+          </div>
+          <div class="md:col-span-1">
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Role</p>
+            <p id="v-role" class="text-lg font-semibold text-slate-700 dark:text-slate-200"></p>
+          </div>
+          <div class="md:col-span-1">
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Issue Date</p>
+            <p id="v-date" class="text-lg font-semibold text-slate-700 dark:text-slate-200"></p>
+          </div>
+          <div class="md:col-span-1">
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Certificate ID</p>
+            <div class="flex items-center gap-2">
+              <p id="v-id" class="font-mono font-bold text-base text-indigo-600 dark:text-indigo-400 break-all"></p>
+              <button id="copyId" class="p-1.5 rounded bg-white/60 dark:bg-white/10 hover:bg-white/80 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 transition" title="Copy Certificate ID">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="md:col-span-1">
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Integrity Hash (SHA-256)</p>
+            <div class="flex items-center gap-2">
+              <p id="v-hash" class="font-mono font-semibold text-sm text-slate-600 dark:text-slate-400 break-all hash-wrap"></p>
+              <button id="copyHash" class="p-1.5 rounded bg-white/60 dark:bg-white/10 hover:bg-white/80 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 transition" title="Copy integrity hash">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/30 dark:border-white/10">
+          <div class="flex items-center gap-3">
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Verification Link</p>
+            <div class="flex-1 flex items-center gap-2">
+              <input id="v-link" type="text" readonly class="glass-input flex-1 rounded-lg px-4 py-3 text-sm font-mono text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+              <button id="copyLink" class="btn-active bg-indigo-600 dark:bg-indigo-500 text-white px-5 py-3 rounded-lg font-semibold shadow-lg shadow-indigo-500/25 hover:bg-indigo-700 dark:hover:bg-indigo-600 transition">Copy Link</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Verify another certificate</p>
+          <div class="flex gap-2">
+            <input id="q2" type="text" placeholder="Certificate ID" class="glass-input rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+            <button id="btnSearch2" class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold transition">Check</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Invalid / tampered state: ?id not found -->
+    <section id="state-invalid" class="hidden fade-in">
+      <div class="glass rounded-2xl p-8 md:p-12 text-center border border-rose-500/30 dark:border-rose-900/30 bg-rose-50/40 dark:bg-rose-900/10">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 mb-6 font-bold text-xl shadow-lg shadow-rose-200/40 dark:shadow-rose-900/20">&#9888;</div>
+        <h2 class="text-2xl md:text-3xl font-bold mb-2">Certificate Not Found</h2>
+        <p class="text-slate-600 dark:text-slate-300 mb-1">The Certificate ID <span class="font-mono font-bold text-rose-600 dark:text-rose-400" id="invalidId"></span></p>
+        <p class="text-slate-600 dark:text-slate-300 mb-6">does not exist in the registry or the credential may have been tampered with.</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <input id="q-invalid" type="text" placeholder="Try another ID" class="glass-input rounded-xl px-5 py-3.5 text-base w-full sm:w-80 focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
+          <button id="btnSearchInvalid" class="bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-600 text-white px-8 py-3.5 rounded-xl font-semibold text-base shadow-lg shadow-rose-500/25 transition">Retry</button>
+        </div>
+        <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Make sure you copied the full ID, e.g. <code class="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-200 px-2 py-0.5 rounded text-xs">CERT-2026-0001</code>.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  var els = {
+    landing: document.getElementById('state-landing'),
+    verified: document.getElementById('state-verified'),
+    invalid: document.getElementById('state-invalid'),
+    q: document.getElementById('q'),
+    btnSearch: document.getElementById('btnSearch'),
+    q2: document.getElementById('q2'),
+    btnSearch2: document.getElementById('btnSearch2'),
+    qInvalid: document.getElementById('q-invalid'),
+    btnSearchInvalid: document.getElementById('btnSearchInvalid'),
+    copyLink: document.getElementById('copyLink'),
+    copyId: document.getElementById('copyId'),
+    copyHash: document.getElementById('copyHash'),
+    themeToggle: document.getElementById('themeToggle'),
+    themeIcon: document.getElementById('themeIcon'),
+    vName: document.getElementById('v-name'),
+    vEvent: document.getElementById('v-event'),
+    vRole: document.getElementById('v-role'),
+    vDate: document.getElementById('v-date'),
+    vId: document.getElementById('v-id'),
+    vHash: document.getElementById('v-hash'),
+    vLink: document.getElementById('v-link'),
+    invalidId: document.getElementById('invalidId'),
+  };
+
+  var registry = {};
+
+  function setState(name) {
+    els.landing.classList.add('hidden');
+    els.verified.classList.add('hidden');
+    els.invalid.classList.add('hidden');
+    document.getElementById('state-' + name).classList.remove('hidden');
+  }
+
+  async function copyText(text, btn) {
+    if (!navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      var original = btn.innerHTML;
+      btn.innerHTML = 'Copied!';
+      setTimeout(function () { btn.innerHTML = original; }, 1600);
+    } catch (err) {
+      console.error('Clipboard copy failed', err);
+    }
+  }
+
+  function resolve(id) {
+    if (!id) {
+      setState('landing');
+      return;
+    }
+    var cert = registry[id.trim()];
+    if (cert) {
+      renderVerified(cert);
+    } else {
+      renderInvalid(id.trim());
+    }
+  }
+
+  function renderVerified(c) {
+    els.vName.textContent = c.name;
+    els.vEvent.textContent = c.event;
+    els.vRole.textContent = c.role;
+    els.vDate.textContent = c.date;
+    els.vId.textContent = c.id;
+    els.vHash.textContent = c.hash;
+    els.vLink.value =
+      window.location.origin + window.location.pathname + '?id=' + encodeURIComponent(c.id);
+    setState('verified');
+  }
+
+  function renderInvalid(id) {
+    els.invalidId.textContent = id;
+    setState('invalid');
+  }
+
+  function doSearch(inputEl) {
+    var v = inputEl.value.trim();
+    if (!v) return;
+    window.location.search = 'id=' + encodeURIComponent(v);
+  }
+
+  // Wire up search controls
+  els.btnSearch.addEventListener('click', function () { doSearch(els.q); });
+  els.q.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q); });
+
+  els.btnSearch2.addEventListener('click', function () { doSearch(els.q2); });
+  els.q2.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.q2); });
+
+  els.btnSearchInvalid.addEventListener('click', function () { doSearch(els.qInvalid); });
+  els.qInvalid.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(els.qInvalid); });
+
+  // Copy actions
+  els.copyLink.addEventListener('click', function () { copyText(els.vLink.value, els.copyLink); });
+  els.copyId.addEventListener('click', function () { copyText(els.vId.textContent, els.copyId); });
+  els.copyHash.addEventListener('click', function () { copyText(els.vHash.textContent, els.copyHash); });
+
+  // Theme toggle
+  els.themeToggle.addEventListener('click', function () {
+    var html = document.documentElement;
+    var isDark = html.classList.toggle('dark');
+    localStorage.setItem('cert-theme', isDark ? 'dark' : 'light');
+    var icon = els.themeIcon;
+    if (isDark) {
+      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+    } else {
+      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 3c4.971 0 9.043 3.578 9.043 8 0 3.51-2.141 6.53-5.172 8.043zM7.953 16.953a9 9 0 0112.736 0l-1.414 1.414a9 9 0 01-12.736 0zM12 3a1 1 0 011 1v4a1 1 0 11-2 0V4a1 1 0 011-1zm0 16a1 1 0 011 1v4a1 1 0 11-2 0v-4a1 1 0 011-1z"></path>';
+    }
+  });
+
+  // Bootstrap
+  var params = new URLSearchParams(window.location.search);
+  var certId = params.get('id');
+
+  fetch('./certificates.json')
+    .then(function (res) {
+      if (!res.ok) throw new Error('registry unavailable');
+      return res.json();
+    })
+    .then(function (data) {
+      registry = data;
+      resolve(certId);
+    })
+    .catch(function () {
+      setState('landing');
+      if (els.q) els.q.placeholder = 'Verification registry unavailable — try again later';
+    });
+})();
+</script>
+</body>
+</html>

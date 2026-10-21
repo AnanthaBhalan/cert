@@ -1,0 +1,6 @@
+# Keep generated PDFs/PNGs and raw CSV local
+output/
+participants.csv
+__pycache__/
+*.pyc
+.env

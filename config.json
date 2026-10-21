@@ -1,0 +1,29 @@
+{
+  "base_verify_url": "https://ananthabhalan.github.io/cert",
+  "template_path": "assets/template.png",
+  "canvas_width": 3508,
+  "canvas_height": 2480,
+  "colors": {
+    "background": "#ffffff",
+    "border": "#0f172a",
+    "border_inner": "#4f46e5",
+    "text_primary": "#0f172a",
+    "text_secondary": "#475569"
+  },
+  "fonts": {
+    "header": null,
+    "name": null,
+    "body": null
+  },
+  "coords": {
+    "header": { "y": 220, "font_size": 130 },
+    "subheader": { "y": 400, "font_size": 56 },
+    "name": { "y": 980, "font_size": 120 },
+    "event": { "y": 1220, "font_size": 70 },
+    "role": { "y": 1440, "font_size": 60 },
+    "date": { "y": 1660, "font_size": 60 },
+    "cert_id": { "x": 140, "y": 2180, "font_size": 44 },
+    "qr_code": { "x": 2560, "y": 1480, "box_size": 400 },
+    "qr_label": { "y_offset": 30, "font_size": 36 }
+  }
+}
